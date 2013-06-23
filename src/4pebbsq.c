@@ -5,13 +5,13 @@
 
 #define MY_UUID { 0x4E, 0x1A, 0x5A, 0x91, 0x9E, 0xB0, 0x45, 0x2A, 0xB7, 0x52, 0xD4, 0x42, 0x64, 0xB1, 0x89, 0xB6 }
 PBL_APP_INFO(MY_UUID,
-             "4pebbsq", "Pebbru",
-             0, 1,
-             DEFAULT_MENU_ICON,
-             APP_INFO_STANDARD_APP);
+						 "4pebbsq", "Pebbru",
+						 0, 1,
+						 DEFAULT_MENU_ICON,
+						 APP_INFO_STANDARD_APP);
 
 typedef struct {
-  char* id;
+	char* id;
 	char* name;
 	char* distance;
 	char* people_here;
@@ -19,7 +19,7 @@ typedef struct {
 
 typedef struct {
 	MenuLayer layer;
-  FsqVenue venues[25];
+	FsqVenue venues[25];
 	char menu_entries[25][25];
 } MenuLib;
 
@@ -85,9 +85,9 @@ void receive(DictionaryIterator *received, void *context) {
 MenuLayerCallbacks cbacks;
 
 void handle_init(AppContextRef ctx) {
-  (void)ctx;
+	(void)ctx;
 
-  window_init(&window, "Window");
+	window_init(&window, "Window");
 	MenuLib *menu = &menu_stack[0];
 	menu_layer_init(&menu->layer, GRect(0,0,window.layer.frame.size.w,window.layer.frame.size.h-15));
 	menu_layer_set_click_config_onto_window(&menu->layer, &window);
@@ -98,23 +98,23 @@ void handle_init(AppContextRef ctx) {
 	cbacks.draw_header = &mainMenu_draw_header;
 	menu_layer_set_callbacks(&menu->layer, NULL, cbacks);
 	layer_add_child(&window.layer, menu_layer_get_layer(&menu->layer));
-  window_stack_push(&window, true);
+	window_stack_push(&window, true);
 	send_message("get_locations", "");
 }
 
 
 void pbl_main(void *params) {
-  PebbleAppHandlers handlers = {
-    .init_handler = &handle_init,
+	PebbleAppHandlers handlers = {
+		.init_handler = &handle_init,
 		.messaging_info = {
-      .buffer_sizes = {
-        .inbound = 512,
-        .outbound = 512,
-      },
-      .default_callbacks.callbacks = {
-        .in_received = receive,
-      },
-    },
-  };
-  app_event_loop(params, &handlers);
+			.buffer_sizes = {
+				.inbound = 512,
+				.outbound = 512,
+			},
+			.default_callbacks.callbacks = {
+				.in_received = receive,
+			},
+		},
+	};
+	app_event_loop(params, &handlers);
 }
