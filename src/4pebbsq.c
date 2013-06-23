@@ -11,19 +11,14 @@ PBL_APP_INFO(MY_UUID,
 						 APP_INFO_STANDARD_APP);
 
 typedef struct {
-	char* id;
-	char* name;
-	char* distance;
-	char* people_here;
+	char id[25];
+	char name[50];
+	char distance[10];
+	char people_here[10];
 } FsqVenue;
 
-typedef struct {
-	MenuLayer layer;
-	FsqVenue venues[25];
-	char menu_entries[25][25];
-} MenuLib;
-
-static MenuLib menu_stack[1];
+FsqVenue venues[25];
+MenuLayer menu_layer;
 
 Window window;
 int current_id = 0;
@@ -34,19 +29,21 @@ void receive(DictionaryIterator *received, void *context);
 void send_message(char *action, char *params);
 
 void menu_item_selected_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
-	MenuLib *menu = (MenuLib*)context;
-	send_message("checkin", menu->venues[cell_index->row].id);
+	send_message("checkin", venues[cell_index->row].id);
 }
+
 uint16_t mainMenu_get_num_rows_in_section(struct MenuLayer *menu_layer, uint16_t section_index, void *callback_context) {
 	return current_id;
 }
+
 uint16_t mainMenu_get_num_sections(struct MenuLayer *menu_layer, void *callback_context) {
 	return 1;
 }
+
 void mainMenu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
-	MenuLib *menu = (MenuLib*)callback_context;
-	menu_cell_basic_draw(ctx, cell_layer, menu->venues[cell_index->row].name, menu->venues[cell_index->row].id, NULL);
+	menu_cell_basic_draw(ctx, cell_layer, venues[cell_index->row].name, venues[cell_index->row].id, NULL);
 }
+
 void mainMenu_draw_header(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *callback_context) {
 	menu_cell_basic_header_draw(ctx, cell_layer, "4pebbsq");
 }
@@ -63,22 +60,18 @@ void send_message(char *action, char *params) {
 
 void receive(DictionaryIterator *received, void *context) {
 	char* action = dict_find(received, 0)->value->cstring;
-	MenuLib *menu = &menu_stack[0];
+
 	if (strcmp(action, (char*)"add_venue") == 0) {
-		memset(menu->venues[current_id].id, 0, 25);
-		memset(menu->venues[current_id].name, 0, 25);
-		memset(menu->venues[current_id].distance, 0, 25);
-		memset(menu->venues[current_id].people_here, 0, 25);
-		memcpy(menu->venues[current_id].id, &dict_find(received, 1)->value->cstring, 24);
-		memcpy(menu->venues[current_id].name, &dict_find(received, 2)->value->cstring, 24);
-		memcpy(menu->venues[current_id].distance, &dict_find(received, 3)->value->cstring, 24);
-		memcpy(menu->venues[current_id].people_here, &dict_find(received, 4)->value->cstring, 24);
-		send_message("fur realz", menu->venues[current_id].id);
-		current_id ++;
+		memcpy(venues[current_id].id, &dict_find(received, 1)->value->cstring, 25);
+		memcpy(venues[current_id].name, &dict_find(received, 2)->value->cstring, 50);
+		memcpy(venues[current_id].distance, &dict_find(received, 3)->value->cstring, 10);
+		memcpy(venues[current_id].people_here, &dict_find(received, 4)->value->cstring, 10);
+		send_message("fur realz", venues[current_id].id);
+		current_id++;
 	}
 	else if (strcmp(action, (char*)"completed_venues") == 0) {
-		send_message("fur lulz", menu->venues[0].id);
-		menu_layer_reload_data(&menu->layer);
+		send_message("fur lulz", venues[0].id);
+		menu_layer_reload_data(menu_layer);
 	}
 }
 
@@ -88,20 +81,18 @@ void handle_init(AppContextRef ctx) {
 	(void)ctx;
 
 	window_init(&window, "Window");
-	MenuLib *menu = &menu_stack[0];
-	menu_layer_init(&menu->layer, GRect(0,0,window.layer.frame.size.w,window.layer.frame.size.h-15));
-	menu_layer_set_click_config_onto_window(&menu->layer, &window);
-	cbacks.get_num_sections = &mainMenu_get_num_sections;;
+	menu_layer_init(menu_layer, GRect(0, 0, window.layer.frame.size.w, window.layer.frame.size.h - 15));
+	menu_layer_set_click_config_onto_window(menu_layer, &window);
+	cbacks.get_num_sections = &mainMenu_get_num_sections;
 	cbacks.get_num_rows = &mainMenu_get_num_rows_in_section;
 	cbacks.select_click = &menu_item_selected_callback;
 	cbacks.draw_row = &mainMenu_draw_row;
 	cbacks.draw_header = &mainMenu_draw_header;
-	menu_layer_set_callbacks(&menu->layer, NULL, cbacks);
-	layer_add_child(&window.layer, menu_layer_get_layer(&menu->layer));
+	menu_layer_set_callbacks(menu_layer, NULL, cbacks);
+	layer_add_child(&window.layer, menu_layer_get_layer(menu_layer));
 	window_stack_push(&window, true);
 	send_message("get_locations", "");
 }
-
 
 void pbl_main(void *params) {
 	PebbleAppHandlers handlers = {
